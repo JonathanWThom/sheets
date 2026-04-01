@@ -5,6 +5,29 @@ import (
 	"strings"
 )
 
+type cellRange struct {
+	start cellKey
+	end   cellKey
+}
+
+func (r cellRange) bounds() (top, bottom, left, right int) {
+	return normalizeCellRange(r.start, r.end)
+}
+
+func (r cellRange) width() int {
+	_, _, left, right := r.bounds()
+	return right - left + 1
+}
+
+func (r cellRange) height() int {
+	top, bottom, _, _ := r.bounds()
+	return bottom - top + 1
+}
+
+func (r cellRange) isSingleCell() bool {
+	return r.start == r.end
+}
+
 func parseCellRef(ref string) (cellKey, bool) {
 	if ref == "" {
 		return cellKey{}, false
@@ -42,6 +65,36 @@ func parseCellRef(ref string) (cellKey, bool) {
 	}
 
 	return cellKey{row: row - 1, col: col}, true
+}
+
+func parseCellRangeRef(ref string) (cellRange, bool) {
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return cellRange{}, false
+	}
+
+	parts := strings.Split(ref, ":")
+	if len(parts) == 1 {
+		cell, ok := parseCellRef(parts[0])
+		if !ok {
+			return cellRange{}, false
+		}
+		return cellRange{start: cell, end: cell}, true
+	}
+	if len(parts) != 2 {
+		return cellRange{}, false
+	}
+
+	start, ok := parseCellRef(parts[0])
+	if !ok {
+		return cellRange{}, false
+	}
+	end, ok := parseCellRef(parts[1])
+	if !ok {
+		return cellRange{}, false
+	}
+
+	return cellRange{start: start, end: end}, true
 }
 
 func parseColumnRef(ref string) (int, bool) {

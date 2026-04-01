@@ -164,6 +164,45 @@ func TestRunQueriesEvaluatedFormulaFromCSV(t *testing.T) {
 	}
 }
 
+func TestRunQueriesCellRangeFromCSV(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "1,2,=A1+B1\n4,5,=A2+B2\n")
+	var stdout bytes.Buffer
+
+	if err := run([]string{path, "A1:C2"}, &stdout); err != nil {
+		t.Fatalf("expected range query to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "1,2,3\n4,5,9\n"; got != want {
+		t.Fatalf("expected range query output %q, got %q", want, got)
+	}
+}
+
+func TestRunQueriesCommaSeparatedCellsOnSameLine(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "Rent,2000\n")
+	var stdout bytes.Buffer
+
+	if err := run([]string{path, "A1,B1"}, &stdout); err != nil {
+		t.Fatalf("expected comma-separated query to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "Rent,2000\n"; got != want {
+		t.Fatalf("expected comma-separated query output %q, got %q", want, got)
+	}
+}
+
+func TestRunQueriesCommaSeparatedRangesByRow(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "1,4\n2,5\n3,6\n")
+	var stdout bytes.Buffer
+
+	if err := run([]string{path, "A1:A3,B1:B3"}, &stdout); err != nil {
+		t.Fatalf("expected comma-separated range query to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "1,4\n2,5\n3,6\n"; got != want {
+		t.Fatalf("expected comma-separated range query output %q, got %q", want, got)
+	}
+}
+
 func TestRunAssignsCellValueInCSV(t *testing.T) {
 	path := writeTempCSV(t, "data.csv", "name,value\napples,3\n")
 
@@ -177,6 +216,43 @@ func TestRunAssignsCellValueInCSV(t *testing.T) {
 	}
 
 	assertCellValue(t, loaded, 1, 1, "20")
+}
+
+func TestRunAssignsCellRangeInCSV(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", ",,\n,,\n,,\n")
+
+	if err := run([]string{path, "A1:A3=1,2,3"}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("expected range assignment to succeed, got %v", err)
+	}
+
+	loaded := newModel()
+	if err := loaded.loadCSVFile(path); err != nil {
+		t.Fatalf("expected written CSV to load, got %v", err)
+	}
+
+	assertCellValue(t, loaded, 0, 0, "1")
+	assertCellValue(t, loaded, 1, 0, "2")
+	assertCellValue(t, loaded, 2, 0, "3")
+}
+
+func TestRunAssignsFormulaAcrossRangeWithRelativeReferences(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "1,\n2,\n3,\n")
+
+	if err := run([]string{path, "B1:B3==A1*2"}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("expected formula range assignment to succeed, got %v", err)
+	}
+
+	loaded := newModel()
+	if err := loaded.loadCSVFile(path); err != nil {
+		t.Fatalf("expected written CSV to load, got %v", err)
+	}
+
+	assertCellValue(t, loaded, 0, 1, "=A1*2")
+	assertCellValue(t, loaded, 1, 1, "=A2*2")
+	assertCellValue(t, loaded, 2, 1, "=A3*2")
+	assertDisplayValue(t, loaded, 0, 1, "=2")
+	assertDisplayValue(t, loaded, 1, 1, "=4")
+	assertDisplayValue(t, loaded, 2, 1, "=6")
 }
 
 func TestRunAssignsFormulaCellInCSV(t *testing.T) {
@@ -196,6 +272,40 @@ func TestRunAssignsFormulaCellInCSV(t *testing.T) {
 		t.Fatalf("expected assigned formula cell to be queryable, got %v", err)
 	} else if want := "3"; got != want {
 		t.Fatalf("expected queried formula value %q, got %q", want, got)
+	}
+}
+
+func TestRunProcessesMultipleCLIQueriesAndWritesInOrder(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "1,2\n3,4\n")
+	var stdout bytes.Buffer
+
+	if err := run([]string{path, "A1:B2", "B1:B2=9,8", "B1:B2"}, &stdout); err != nil {
+		t.Fatalf("expected multiple CLI operations to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "1,2\n3,4\n9\n8\n"; got != want {
+		t.Fatalf("expected combined query output %q, got %q", want, got)
+	}
+
+	loaded := newModel()
+	if err := loaded.loadCSVFile(path); err != nil {
+		t.Fatalf("expected written CSV to load, got %v", err)
+	}
+
+	assertCellValue(t, loaded, 0, 1, "9")
+	assertCellValue(t, loaded, 1, 1, "8")
+}
+
+func TestRunPrintsMultipleSingleCellQueriesWithoutBlankLines(t *testing.T) {
+	path := writeTempCSV(t, "data.csv", "1,2,3\n4,5,6\n7,8,9\n")
+	var stdout bytes.Buffer
+
+	if err := run([]string{path, "B1", "B2", "B3"}, &stdout); err != nil {
+		t.Fatalf("expected multiple single-cell queries to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "2\n5\n8\n"; got != want {
+		t.Fatalf("expected combined query output %q, got %q", want, got)
 	}
 }
 
@@ -358,6 +468,33 @@ func TestParseCellRef(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, ok := parseCellRef(tc.ref)
+			if ok != tc.wantOK {
+				t.Fatalf("expected ok=%v, got %v", tc.wantOK, ok)
+			}
+			if ok && got != tc.want {
+				t.Fatalf("expected ref %#v, got %#v", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestParseCellRangeRef(t *testing.T) {
+	testCases := []struct {
+		name   string
+		ref    string
+		want   cellRange
+		wantOK bool
+	}{
+		{name: "single cell", ref: "A1", want: cellRange{start: cellKey{row: 0, col: 0}, end: cellKey{row: 0, col: 0}}, wantOK: true},
+		{name: "range", ref: "A1:C3", want: cellRange{start: cellKey{row: 0, col: 0}, end: cellKey{row: 2, col: 2}}, wantOK: true},
+		{name: "trimmed", ref: " b2 : a1 ", want: cellRange{start: cellKey{row: 1, col: 1}, end: cellKey{row: 0, col: 0}}, wantOK: true},
+		{name: "missing end", ref: "A1:", wantOK: false},
+		{name: "too many separators", ref: "A1:B2:C3", wantOK: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := parseCellRangeRef(tc.ref)
 			if ok != tc.wantOK {
 				t.Fatalf("expected ok=%v, got %v", tc.wantOK, ok)
 			}

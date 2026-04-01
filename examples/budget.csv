@@ -1,9 +1,9 @@
-Rent
-Utilities
-Wi-Fi
-Food
-Haircut
-Phone
-Netflix
+Rent,2000
+Utilities,20
+Wi-Fi,20
+Food,304
+Haircut,0
+Phone,4
+Netflix,40
 Prime,40
 ,=SUM(B)
