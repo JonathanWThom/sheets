@@ -63,7 +63,7 @@ I'd love to hear your feedback on improving `sheets`.
 Feel free to reach out via:
 * [Email](mailto:maas@lalani.dev)
 * [Twitter](https://twitter.com/maaslalani)
-* [GitHub issues](https://github.com/maaslalani/invoice/issues/new)
+* [GitHub issues](https://github.com/maaslalani/sheets/issues/new)
 
 ---
 
