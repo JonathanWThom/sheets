@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/csv"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,6 +72,70 @@ func TestNewProgramModelLoadsCSVFromFirstArg(t *testing.T) {
 	}
 	assertCellValue(t, m, 0, 0, "name")
 	assertCellValue(t, m, 1, 1, "3")
+}
+
+func TestNewProgramModelLoadsCSVFromStdin(t *testing.T) {
+	m, err := newProgramModelWithInput(nil, strings.NewReader("name,value\nmaas,26\n"))
+	if err != nil {
+		t.Fatalf("expected startup CSV load from stdin to succeed, got %v", err)
+	}
+
+	assertCellValue(t, m, 0, 0, "name")
+	assertCellValue(t, m, 1, 0, "maas")
+	assertCellValue(t, m, 1, 1, "26")
+}
+
+func TestResolveInputStreamsUsesStdinOnlyWhenPipedAndNoArgs(t *testing.T) {
+	originalOpenTTY := openTTY
+	openTTY = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader("")), nil
+	}
+	t.Cleanup(func() {
+		openTTY = originalOpenTTY
+	})
+
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create pipe: %v", err)
+	}
+	t.Cleanup(func() {
+		readPipe.Close()
+		writePipe.Close()
+	})
+
+	startupInput, programInput, cleanup, err := resolveInputStreams(nil, readPipe)
+	if err != nil {
+		t.Fatalf("expected piped stdin to resolve, got %v", err)
+	}
+	if startupInput != readPipe {
+		t.Fatal("expected startup input to use piped stdin")
+	}
+	if programInput == nil {
+		t.Fatal("expected interactive input to be configured")
+	}
+	if cleanup == nil {
+		t.Fatal("expected tty cleanup to be returned")
+	}
+	cleanup.Close()
+}
+
+func TestResolveInputStreamsIgnoresStdinWhenArgsPresent(t *testing.T) {
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create pipe: %v", err)
+	}
+	t.Cleanup(func() {
+		readPipe.Close()
+		writePipe.Close()
+	})
+
+	startupInput, programInput, cleanup, err := resolveInputStreams([]string{"data.csv"}, readPipe)
+	if err != nil {
+		t.Fatalf("expected args to bypass stdin resolution, got %v", err)
+	}
+	if startupInput != nil || programInput != nil || cleanup != nil {
+		t.Fatal("expected stdin resolution to be skipped when args are present")
+	}
 }
 
 func TestRunQueriesPlainCellValueFromCSV(t *testing.T) {

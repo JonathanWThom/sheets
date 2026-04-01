@@ -9,9 +9,22 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var openTTY = func() (io.ReadCloser, error) {
+	return os.Open("/dev/tty")
+}
+
 func newProgramModel(args []string) (model, error) {
+	return newProgramModelWithInput(args, nil)
+}
+
+func newProgramModelWithInput(args []string, stdin io.Reader) (model, error) {
 	m := newModel()
 	if len(args) == 0 {
+		if stdin != nil {
+			if err := m.loadCSVReader(stdin); err != nil {
+				return model{}, err
+			}
+		}
 		return m, nil
 	}
 
@@ -78,6 +91,10 @@ func writeCellValue(path, input string) error {
 }
 
 func run(args []string, stdout io.Writer) error {
+	return runWithIO(args, nil, nil, stdout)
+}
+
+func runWithIO(args []string, stdin io.Reader, input io.Reader, stdout io.Writer) error {
 	if len(args) > 2 {
 		return fmt.Errorf("usage: sheets [file.csv [cell|cell=value]]")
 	}
@@ -95,19 +112,52 @@ func run(args []string, stdout io.Writer) error {
 		return err
 	}
 
-	m, err := newProgramModel(args)
+	m, err := newProgramModelWithInput(args, stdin)
 	if err != nil {
 		return err
 	}
 
-	program := tea.NewProgram(m, tea.WithAltScreen())
+	options := []tea.ProgramOption{tea.WithAltScreen()}
+	if input != nil {
+		options = append(options, tea.WithInput(input))
+	}
+
+	program := tea.NewProgram(m, options...)
 	_, err = program.Run()
 	return err
 }
 
 func main() {
-	if err := run(os.Args[1:], os.Stdout); err != nil {
+	startupInput, programInput, cleanup, err := resolveInputStreams(os.Args[1:], os.Stdin)
+	if err == nil && cleanup != nil {
+		defer cleanup.Close()
+	}
+	if err == nil {
+		err = runWithIO(os.Args[1:], startupInput, programInput, os.Stdout)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func resolveInputStreams(args []string, stdin *os.File) (io.Reader, io.Reader, io.Closer, error) {
+	if len(args) != 0 || stdin == nil {
+		return nil, nil, nil, nil
+	}
+
+	info, err := stdin.Stat()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if info.Mode()&os.ModeCharDevice != 0 {
+		return nil, nil, nil, nil
+	}
+
+	tty, err := openTTY()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("interactive mode requires a tty when reading CSV from stdin: %w", err)
+	}
+
+	return stdin, tty, tty, nil
 }

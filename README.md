@@ -37,7 +37,6 @@ Write a specific cell
 ## Navigation
 
 * <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd>: Move the active cell
-* Numeric prefix + motion: Repeat a motion or command such as <kbd>5j</kbd> or <kbd>3dd</kbd>
 * <kbd>gg</kbd>, <kbd>G</kbd>, <kbd>5G</kbd>, <kbd>gB9</kbd>: Jump to the top, bottom, a row number, or a specific cell
 * <kbd>0</kbd>, <kbd>^</kbd>, <kbd>$</kbd>: Jump to the first column, first non-empty column, or last non-empty column in the row
 * <kbd>H</kbd>, <kbd>M</kbd>, <kbd>L</kbd>: Jump to the top, middle, or bottom visible row
@@ -52,7 +51,7 @@ Write a specific cell
 ### Editing & Selection
 
 * <kbd>i</kbd>, <kbd>I</kbd>, <kbd>c</kbd>: Edit the current cell, edit from the start, or clear the cell and edit
-* <kbd>Esc</kbd>: Leave insert, visual, or command mode. In insert mode it commits the current cell first
+* <kbd>Esc</kbd>: Leave insert, visual, or command mode
 * <kbd>Enter</kbd>, <kbd>Tab</kbd>, <kbd>Shift+Tab</kbd>: In insert mode, commit and move down, right, or left
 * <kbd>Ctrl+N</kbd>, <kbd>Ctrl+P</kbd>: In insert mode, commit and move down or up
 * <kbd>o</kbd>, <kbd>O</kbd>: Insert a row below or above and start editing

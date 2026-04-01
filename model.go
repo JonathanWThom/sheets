@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"io"
 	"maps"
 	"os"
 
@@ -150,12 +151,20 @@ func (m *model) loadCSVFile(path string) error {
 	}
 	defer file.Close()
 
-	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1
-	if err := m.loadCSV(reader); err != nil {
+	if err := m.loadCSVReader(file); err != nil {
 		return err
 	}
 	m.currentFilePath = path
+	return nil
+}
+
+func (m *model) loadCSVReader(reader io.Reader) error {
+	csvReader := csv.NewReader(reader)
+	csvReader.FieldsPerRecord = -1
+	if err := m.loadCSV(csvReader); err != nil {
+		return err
+	}
+	m.currentFilePath = ""
 	return nil
 }
 
