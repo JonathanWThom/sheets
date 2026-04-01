@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,6 +14,35 @@ import (
 var openTTY = func() (io.ReadCloser, error) {
 	return os.Open("/dev/tty")
 }
+
+var readBuildInfo = debug.ReadBuildInfo
+
+const helpText = `Spreadsheets in your terminal.
+
+USAGE
+  sheets [file.csv]
+      Launch sheets interactively.
+
+  sheets [file.csv] [cell|range|cell=value|range=value]...
+      Query or modify a cell through the command-line interface.
+
+  sheets < input.csv
+      Launch sheets interactively and load CSV through stdin.
+
+OPTIONS
+  -h, --help
+      Show this help message.
+
+  -v, --version
+      Show the current version.
+
+EXAMPLES
+  sheets budget.csv
+  sheets budget.csv B9
+  sheets budget.csv B1:B3
+  sheets budget.csv B7=10 B8=20
+  cat budget.csv | sheets
+`
 
 func newProgramModel(args []string) (model, error) {
 	return newProgramModelWithInput(args, nil)
@@ -284,11 +314,46 @@ func writeQueryRecords(stdout io.Writer, records [][][]string) error {
 	return nil
 }
 
+func maybeHandleTopLevelOption(args []string, stdout io.Writer) (bool, error) {
+	if len(args) == 0 {
+		return false, nil
+	}
+
+	switch args[0] {
+	case "-h", "--help":
+		_, err := io.WriteString(stdout, helpText)
+		return true, err
+	case "-v", "--version":
+		_, err := fmt.Fprintf(stdout, "sheets %s\n", buildVersion())
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func buildVersion() string {
+	info, ok := readBuildInfo()
+	if !ok {
+		return "dev"
+	}
+
+	version := strings.TrimSpace(info.Main.Version)
+	if version == "" || version == "(devel)" {
+		return "dev"
+	}
+
+	return version
+}
+
 func run(args []string, stdout io.Writer) error {
 	return runWithIO(args, nil, nil, stdout)
 }
 
 func runWithIO(args []string, stdin io.Reader, input io.Reader, stdout io.Writer) error {
+	if handled, err := maybeHandleTopLevelOption(args, stdout); handled || err != nil {
+		return err
+	}
+
 	if len(args) > 1 {
 		return runCLI(args, stdout)
 	}

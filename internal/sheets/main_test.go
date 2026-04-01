@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -306,6 +307,116 @@ func TestRunPrintsMultipleSingleCellQueriesWithoutBlankLines(t *testing.T) {
 
 	if got, want := stdout.String(), "2\n5\n8\n"; got != want {
 		t.Fatalf("expected combined query output %q, got %q", want, got)
+	}
+}
+
+func TestRunPrintsHelp(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := run([]string{"--help"}, &stdout); err != nil {
+		t.Fatalf("expected help output to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), helpText; got != want {
+		t.Fatalf("expected help output %q, got %q", want, got)
+	}
+}
+
+func TestRunPrintsShortHelp(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := run([]string{"-h"}, &stdout); err != nil {
+		t.Fatalf("expected short help output to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), helpText; got != want {
+		t.Fatalf("expected help output %q, got %q", want, got)
+	}
+}
+
+func TestRunPrintsVersion(t *testing.T) {
+	originalReadBuildInfo := readBuildInfo
+	readBuildInfo = func() (*debug.BuildInfo, bool) {
+		return &debug.BuildInfo{
+			Main: debug.Module{Version: "v1.2.3"},
+		}, true
+	}
+	t.Cleanup(func() {
+		readBuildInfo = originalReadBuildInfo
+	})
+
+	var stdout bytes.Buffer
+	if err := run([]string{"--version"}, &stdout); err != nil {
+		t.Fatalf("expected version output to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "sheets v1.2.3\n"; got != want {
+		t.Fatalf("expected version output %q, got %q", want, got)
+	}
+}
+
+func TestRunPrintsShortVersion(t *testing.T) {
+	originalReadBuildInfo := readBuildInfo
+	readBuildInfo = func() (*debug.BuildInfo, bool) {
+		return &debug.BuildInfo{
+			Main: debug.Module{Version: "v1.2.3"},
+		}, true
+	}
+	t.Cleanup(func() {
+		readBuildInfo = originalReadBuildInfo
+	})
+
+	var stdout bytes.Buffer
+	if err := run([]string{"-v"}, &stdout); err != nil {
+		t.Fatalf("expected short version output to succeed, got %v", err)
+	}
+
+	if got, want := stdout.String(), "sheets v1.2.3\n"; got != want {
+		t.Fatalf("expected version output %q, got %q", want, got)
+	}
+}
+
+func TestBuildVersionFallsBackToDev(t *testing.T) {
+	testCases := []struct {
+		name string
+		info *debug.BuildInfo
+		ok   bool
+		want string
+	}{
+		{
+			name: "missing build info",
+			want: "dev",
+		},
+		{
+			name: "empty version",
+			info: &debug.BuildInfo{},
+			ok:   true,
+			want: "dev",
+		},
+		{
+			name: "devel version",
+			info: &debug.BuildInfo{
+				Main: debug.Module{Version: "(devel)"},
+			},
+			ok:   true,
+			want: "dev",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			originalReadBuildInfo := readBuildInfo
+			readBuildInfo = func() (*debug.BuildInfo, bool) {
+				return tc.info, tc.ok
+			}
+			t.Cleanup(func() {
+				readBuildInfo = originalReadBuildInfo
+			})
+
+			if got := buildVersion(); got != tc.want {
+				t.Fatalf("expected version %q, got %q", tc.want, got)
+			}
+		})
 	}
 }
 
