@@ -71,6 +71,10 @@ Modify a cell:
 * <kbd>u</kbd>, <kbd>Ctrl+R</kbd>, <kbd>U</kbd>: Undo and redo
 * <kbd>.</kbd>: Repeat the last change
 
+### Visual Mode
+
+* <kbd>=</kbd>: In visual mode, insert a formula after the selected range `=|(B1:B8)`.
+
 ### Command Mode
 
 Press <kbd>:</kbd> to open the command prompt, then use commands such as:
