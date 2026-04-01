@@ -2,7 +2,7 @@
 
 Spreadsheets in your terminal.
 
-<img width="1114" height="778" alt="Sheets" src="./examples/demo.gif" />
+<img width="800" alt="Sheets" src="./examples/demo.gif" />
 
 ## Command Line Interface
 
@@ -12,14 +12,14 @@ Launch the TUI
 > sheets budget.csv
 ```
 
-Read a specific `CELL`
+Read a specific cell
 
 ```bash
 > sheets budget.csv B9
 2760
 ```
 
-Writea specific `CELL`
+Write a specific cell
 
 ```bash
 > sheets budget.csv B8=20
