@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 	"strings"
 	"unicode"
 )
@@ -209,22 +210,50 @@ func renderTextInput(value string, cursorPos, width int, cursorModel cursor.Mode
 
 	runes := normalizedTextInputValue(value)
 	pos := clamp(cursorPos, 0, len(runes))
-	start := max(0, pos-width+1)
 	cursorModel.TextStyle = textStyle
 
+	cursorChar := " "
+	cursorW := 1
 	if pos < len(runes) {
-		end := min(len(runes), start+width)
+		cursorChar = string(runes[pos])
+		cursorW = runewidth.RuneWidth(runes[pos])
+	}
+
+	// Walk backward from cursor to find visible start index.
+	start := pos
+	usedWidth := cursorW
+	for start > 0 {
+		rw := runewidth.RuneWidth(runes[start-1])
+		if usedWidth+rw > width {
+			break
+		}
+		start--
+		usedWidth += rw
+	}
+
+	cursorModel.SetChar(cursorChar)
+
+	if pos < len(runes) {
+		// Walk forward from cursor to find visible end index.
+		end := pos + 1
+		for end < len(runes) {
+			rw := runewidth.RuneWidth(runes[end])
+			if usedWidth+rw > width {
+				break
+			}
+			end++
+			usedWidth += rw
+		}
+
 		before := string(runes[start:pos])
 		after := string(runes[pos+1 : end])
-		cursorModel.SetChar(string(runes[pos]))
-		renderedWidth := end - start
-		return textStyle.Render(before) + cursorModel.View() + textStyle.Render(after) + textStyle.Render(strings.Repeat(" ", width-renderedWidth))
+		renderedWidth := runewidth.StringWidth(before) + cursorW + runewidth.StringWidth(after)
+		return textStyle.Render(before) + cursorModel.View() + textStyle.Render(after) + textStyle.Render(strings.Repeat(" ", max(0, width-renderedWidth)))
 	}
 
 	before := string(runes[start:pos])
-	cursorModel.SetChar(" ")
-	renderedWidth := len([]rune(before)) + 1
-	return textStyle.Render(before) + cursorModel.View() + textStyle.Render(strings.Repeat(" ", width-renderedWidth))
+	renderedWidth := runewidth.StringWidth(before) + 1
+	return textStyle.Render(before) + cursorModel.View() + textStyle.Render(strings.Repeat(" ", max(0, width-renderedWidth)))
 }
 
 func normalizedTextInputValue(value string) []rune {

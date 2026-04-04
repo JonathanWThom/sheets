@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -2811,5 +2812,23 @@ func TestTruncateWithAccentedCharacters(t *testing.T) {
 	got := truncate("café latte", 6)
 	if got != "café …" {
 		t.Fatalf("expected %q, got %q", "café …", got)
+	}
+}
+
+func TestRenderTextInputWithAccentedCharacters(t *testing.T) {
+	cur := cursor.New()
+	cur.Focus()
+	style := lipgloss.NewStyle()
+
+	// "café" cursor at end (pos=4): should pad to full width
+	got := renderTextInput("café", 4, 8, cur, style)
+	if w := lipgloss.Width(got); w != 8 {
+		t.Fatalf("expected display width 8 at pos=4, got %d: %q", w, got)
+	}
+
+	// "café" cursor at start (pos=0): cursor on 'c', then "afé" + padding
+	got = renderTextInput("café", 0, 8, cur, style)
+	if w := lipgloss.Width(got); w != 8 {
+		t.Fatalf("expected display width 8 at pos=0, got %d: %q", w, got)
 	}
 }
