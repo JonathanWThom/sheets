@@ -2832,3 +2832,87 @@ func TestRenderTextInputWithAccentedCharacters(t *testing.T) {
 		t.Fatalf("expected display width 8 at pos=0, got %d: %q", w, got)
 	}
 }
+
+func TestMouseClickFocusesCell(t *testing.T) {
+	m := newModel()
+	m.width = 80
+	m.height = 24
+	m.setCellValue(0, 0, "A")
+	m.setCellValue(1, 1, "B")
+
+	// Click on row 1, col 1: y=4 (line 2 + 2*1), x = rowLabelWidth+2 + 1*(cellWidth+1)
+	clickX := m.rowLabelWidth + 2 + 1*(m.cellWidth+1)
+	clickY := 4
+	clickMsg := tea.MouseMsg{X: clickX, Y: clickY, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+	updated, _ := m.Update(clickMsg)
+	got := updated.(model)
+	assertSelection(t, got, 1, 1)
+	if got.mode != normalMode {
+		t.Fatalf("expected normal mode after click, got %s", got.mode)
+	}
+}
+
+func TestMouseClickExitsInsertMode(t *testing.T) {
+	m := newModel()
+	m.width = 80
+	m.height = 24
+	m.mode = insertMode
+	m.editingValue = "hello"
+	m.editingCursor = 5
+
+	// Click on row 0, col 0
+	clickX := m.rowLabelWidth + 2
+	clickY := 2
+	clickMsg := tea.MouseMsg{X: clickX, Y: clickY, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+	updated, _ := m.Update(clickMsg)
+	got := updated.(model)
+	if got.mode != normalMode {
+		t.Fatalf("expected normal mode, got %s", got.mode)
+	}
+	assertSelection(t, got, 0, 0)
+}
+
+func TestMouseClickOnBorderIgnored(t *testing.T) {
+	m := newModel()
+	m.width = 80
+	m.height = 24
+
+	// Click on border line (y=1 is the top border)
+	clickMsg := tea.MouseMsg{X: 10, Y: 1, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft}
+	updated, _ := m.Update(clickMsg)
+	got := updated.(model)
+	assertSelection(t, got, 0, 0) // should remain at default
+}
+
+func TestCellFromMouseMapping(t *testing.T) {
+	m := newModel()
+	m.width = 80
+	m.height = 24
+
+	// Row 0, Col 0
+	row, col, ok := m.cellFromMouse(m.rowLabelWidth+2, 2)
+	if !ok || row != 0 || col != 0 {
+		t.Fatalf("expected (0,0,true), got (%d,%d,%v)", row, col, ok)
+	}
+
+	// Row 2, Col 3
+	x := m.rowLabelWidth + 2 + 3*(m.cellWidth+1)
+	y := 2 + 2*2
+	row, col, ok = m.cellFromMouse(x, y)
+	if !ok || row != 2 || col != 3 {
+		t.Fatalf("expected (2,3,true), got (%d,%d,%v)", row, col, ok)
+	}
+
+	// Click on row label area
+	_, _, ok = m.cellFromMouse(1, 2)
+	if ok {
+		t.Fatal("expected click on row label to return false")
+	}
+
+	// Click on border between columns
+	borderX := m.rowLabelWidth + 2 + m.cellWidth
+	_, _, ok = m.cellFromMouse(borderX, 2)
+	if ok {
+		t.Fatal("expected click on column border to return false")
+	}
+}

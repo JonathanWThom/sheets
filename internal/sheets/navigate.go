@@ -199,3 +199,30 @@ func (m *model) navigateJumpList(direction, count int) {
 		m.goToCell(target.row, target.col)
 	}
 }
+
+func (m model) cellFromMouse(x, y int) (row, col int, ok bool) {
+	// Column headers occupy line 0, top border is line 1.
+	// Content lines are at y = 2, 4, 6, ... (every other line starting at 2).
+	if y < 2 || (y-2)%2 != 0 {
+		return 0, 0, false
+	}
+	visibleRowIndex := (y - 2) / 2
+	if visibleRowIndex < 0 || visibleRowIndex >= m.visibleRows() {
+		return 0, 0, false
+	}
+
+	// Cell content area starts after row label + space + left border.
+	cellAreaStart := m.rowLabelWidth + 2
+	if x < cellAreaStart {
+		return 0, 0, false
+	}
+
+	stride := m.cellWidth + 1
+	visibleColIndex := (x - cellAreaStart) / stride
+	offsetInStride := (x - cellAreaStart) % stride
+	if offsetInStride >= m.cellWidth || visibleColIndex >= m.visibleCols() {
+		return 0, 0, false
+	}
+
+	return m.rowOffset + visibleRowIndex, m.colOffset + visibleColIndex, true
+}

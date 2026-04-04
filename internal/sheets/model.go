@@ -281,6 +281,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ensureVisible()
 		return m, nil
 
+	case tea.MouseMsg:
+		if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+			if row, col, ok := m.cellFromMouse(msg.X, msg.Y); ok {
+				if m.mode == insertMode {
+					m.commitCurrentInput()
+					m.mode = normalMode
+					m.insertKeys = nil
+					m.recordingInsert = false
+					m.editCursor.Blur()
+				}
+				if m.mode == selectMode {
+					m.mode = normalMode
+				}
+				m.clearNormalPrefixes()
+				m.goToCell(row, col)
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		if isQuitKey(msg) {
 			return m, tea.Quit

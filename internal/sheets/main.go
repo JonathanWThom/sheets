@@ -329,7 +329,7 @@ func runWithIO(args []string, stdin io.Reader, input io.Reader, stdout io.Writer
 		return err
 	}
 
-	options := []tea.ProgramOption{tea.WithAltScreen()}
+	options := []tea.ProgramOption{tea.WithAltScreen(), tea.WithMouseCellMotion()}
 	if input != nil {
 		options = append(options, tea.WithInput(input))
 	}
