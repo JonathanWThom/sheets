@@ -2783,3 +2783,33 @@ func TestExtraMotionsAndScrollCommands(t *testing.T) {
 		t.Fatalf("expected zb to align current row to bottom, got row offset %d", got.rowOffset)
 	}
 }
+
+func TestFitWithAccentedCharacters(t *testing.T) {
+	// "café" is 4 display columns but 5 bytes in UTF-8
+	got := fit("café", 8)
+	if got != "café    " {
+		t.Fatalf("expected %q, got %q", "café    ", got)
+	}
+}
+
+func TestAlignCenterWithAccentedCharacters(t *testing.T) {
+	got := alignCenter("café", 8)
+	if got != "  café  " {
+		t.Fatalf("expected %q, got %q", "  café  ", got)
+	}
+}
+
+func TestFitLeftWithAccentedCharacters(t *testing.T) {
+	got := fitLeft("café", 8)
+	if got != "    café" {
+		t.Fatalf("expected %q, got %q", "    café", got)
+	}
+}
+
+func TestTruncateWithAccentedCharacters(t *testing.T) {
+	// "café latte" is 10 display columns; truncate to 6
+	got := truncate("café latte", 6)
+	if got != "café …" {
+		t.Fatalf("expected %q, got %q", "café …", got)
+	}
+}

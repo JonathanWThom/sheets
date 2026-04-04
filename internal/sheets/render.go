@@ -2,6 +2,7 @@ package sheets
 
 import (
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 	"strconv"
 	"strings"
 )
@@ -61,7 +62,7 @@ func (m model) renderStatusBar() string {
 
 func (m model) renderStatusMode() string {
 	modeLabel := m.statusModeLabel()
-	label := fit(modeLabel, max(6, len(modeLabel)))
+	label := fit(modeLabel, max(6, runewidth.StringWidth(modeLabel)))
 	if m.mode == commandMode {
 		return m.statusTextStyle.Render(label)
 	}
@@ -469,11 +470,12 @@ func (m model) displayValue(row, col int) string {
 
 func alignCenter(value string, width int) string {
 	value = truncate(value, width)
-	if len(value) >= width {
+	w := runewidth.StringWidth(value)
+	if w >= width {
 		return value
 	}
 
-	padding := width - len(value)
+	padding := width - w
 	left := padding / 2
 	right := padding - left
 	return strings.Repeat(" ", left) + value + strings.Repeat(" ", right)
@@ -481,20 +483,22 @@ func alignCenter(value string, width int) string {
 
 func fit(value string, width int) string {
 	value = truncate(value, width)
-	if len(value) >= width {
+	w := runewidth.StringWidth(value)
+	if w >= width {
 		return value
 	}
 
-	return value + strings.Repeat(" ", width-len(value))
+	return value + strings.Repeat(" ", width-w)
 }
 
 func fitLeft(value string, width int) string {
 	value = truncate(value, width)
-	if len(value) >= width {
+	w := runewidth.StringWidth(value)
+	if w >= width {
 		return value
 	}
 
-	return strings.Repeat(" ", width-len(value)) + value
+	return strings.Repeat(" ", width-w) + value
 }
 
 func truncate(value string, width int) string {
@@ -502,13 +506,13 @@ func truncate(value string, width int) string {
 		return ""
 	}
 
-	runes := []rune(strings.ReplaceAll(value, "\n", " "))
-	if len(runes) <= width {
-		return string(runes)
+	value = strings.ReplaceAll(value, "\n", " ")
+	if runewidth.StringWidth(value) <= width {
+		return value
 	}
 	if width == 1 {
-		return string(runes[:1])
+		return string([]rune(value)[:1])
 	}
 
-	return string(runes[:width-1]) + "…"
+	return runewidth.Truncate(value, width-1, "") + "…"
 }
