@@ -1,4 +1,4 @@
-module github.com/maaslalani/sheets
+module github.com/JonathanWThom/sheets
 
 go 1.25.7
 
