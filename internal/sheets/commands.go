@@ -158,7 +158,7 @@ func (m *model) executePrompt() tea.Cmd {
 			m.commandError = false
 			return nil
 		}
-		if err := m.writeCSVFile(arg); err != nil {
+		if err := m.writeFile(arg); err != nil {
 			m.commandMessage = fmt.Sprintf("write %q: %v", arg, err)
 			m.commandError = true
 			return nil
@@ -178,7 +178,7 @@ func (m *model) executePrompt() tea.Cmd {
 			}
 			arg = m.currentFilePath
 		}
-		if err := m.loadCSVFile(arg); err != nil {
+		if err := m.loadFile(arg); err != nil {
 			m.commandMessage = fmt.Sprintf("edit %q: %v", arg, err)
 			m.commandError = true
 			return nil
@@ -211,7 +211,7 @@ func (m *model) writeCurrentFile() error {
 	if m.currentFilePath == "" {
 		return errors.New("write requires a path")
 	}
-	if err := m.writeCSVFile(m.currentFilePath); err != nil {
+	if err := m.writeFile(m.currentFilePath); err != nil {
 		return fmt.Errorf("write %q: %w", m.currentFilePath, err)
 	}
 	m.commandMessage = fmt.Sprintf("wrote %s", m.currentFilePath)

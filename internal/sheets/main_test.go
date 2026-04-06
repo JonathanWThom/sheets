@@ -97,7 +97,7 @@ func TestLoadCSVExpandsRowLabelWidthForFiveDigitRows(t *testing.T) {
 	if got, want := m.rowLabelWidth, 5; got != want {
 		t.Fatalf("expected row label width %d, got %d", want, got)
 	}
-	if line := m.renderContentLine(9999, []int{0}); !strings.Contains(line, "10000") {
+	if line := m.renderContentLine(9999, 1); !strings.Contains(line, "10000") {
 		t.Fatalf("expected rendered row label to include 10000, got %q", line)
 	}
 }
@@ -186,7 +186,7 @@ func TestRunAssignsCellValueInTSV(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written TSV to load, got %v", err)
 	}
 
@@ -319,7 +319,7 @@ func TestRunAssignsCellValueInCSV(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -334,7 +334,7 @@ func TestRunAssignsCellRangeInCSV(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -351,7 +351,7 @@ func TestRunAssignsFormulaAcrossRangeWithRelativeReferences(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -371,7 +371,7 @@ func TestRunAssignsFormulaCellInCSV(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -396,7 +396,7 @@ func TestRunProcessesMultipleCLIQueriesAndWritesInOrder(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -526,7 +526,7 @@ func TestRunAssignsCellInMissingCSVPath(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 
@@ -557,7 +557,7 @@ func TestNewProgramModelTracksMissingStartupPathForWrite(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written startup file to load, got %v", err)
 	}
 	assertCellValue(t, loaded, 0, 0, "draft")
@@ -1600,7 +1600,7 @@ func TestCommandPromptWritePersistsCSVToPath(t *testing.T) {
 	}
 
 	loaded := newModel()
-	if err := loaded.loadCSVFile(path); err != nil {
+	if err := loaded.loadFile(path); err != nil {
 		t.Fatalf("expected written CSV to load, got %v", err)
 	}
 	assertCellValue(t, loaded, 0, 0, "hello,world")
@@ -2751,7 +2751,7 @@ func TestCommandPromptAliasesTrackCurrentFile(t *testing.T) {
 	}
 
 	m := newModel()
-	if err := m.loadCSVFile(path); err != nil {
+	if err := m.loadFile(path); err != nil {
 		t.Fatalf("expected CSV load to succeed, got %v", err)
 	}
 	m.setCellValue(0, 0, "updated")

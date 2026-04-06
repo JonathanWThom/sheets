@@ -8,12 +8,21 @@ Spreadsheets in your terminal.
 </p>
 <br />
 
+## Supported Formats
+
+* **CSV** (`.csv`) — comma-separated values
+* **TSV** (`.tsv`) — tab-separated values
+* **Excel** (`.xlsx`) — Office Open XML spreadsheets
+
+The format is detected automatically from the file extension when opening and saving.
+
 ## Command Line Interface
 
 Launch the TUI
 
 ```bash
 > sheets budget.csv
+> sheets report.xlsx
 ```
 
 Read from stdin:
@@ -84,8 +93,8 @@ Modify a cell:
 Press <kbd>:</kbd> to open the command prompt, then use commands such as:
 
 - <kbd>:w</kbd> to save
-- <kbd>:w</kbd> <code>path.csv</code> to save to a new file
-- <kbd>:e</kbd> <code>path.csv</code> to open another CSV
+- <kbd>:w</kbd> <code>path.csv</code> or <kbd>:w</kbd> <code>path.xlsx</code> to save to a new file
+- <kbd>:e</kbd> <code>path.csv</code> or <kbd>:e</kbd> <code>path.xlsx</code> to open another file
 - <kbd>:q</kbd> or <kbd>:wq</kbd> to quit
 - <kbd>:goto B9</kbd> or <kbd>:B9</kbd> to jump to a cell
 
@@ -111,10 +120,8 @@ nix-env -iA nixpkgs.sheets
 Install with Go:
 
 ```sh
-go install github.com/maaslalani/sheets@main
+go install github.com/JonathanWThom/sheets@main
 ```
-
-Or download a binary from the [releases](https://github.com/maaslalani/sheets/releases).
 
 ## License
 
@@ -122,12 +129,9 @@ Or download a binary from the [releases](https://github.com/maaslalani/sheets/re
 
 ## Feedback
 
-I'd love to hear your feedback on improving `sheets`.
+Feel free to reach out via [GitHub issues](https://github.com/JonathanWThom/sheets/issues/new).
 
-Feel free to reach out via:
-* [Email](mailto:maas@lalani.dev)
-* [Twitter](https://twitter.com/maaslalani)
-* [GitHub issues](https://github.com/maaslalani/sheets/issues/new)
+This is a fork of [maaslalani/sheets](https://github.com/maaslalani/sheets) with added Excel (.xlsx) support.
 
 ---
 

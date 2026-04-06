@@ -20,10 +20,10 @@ var readBuildInfo = debug.ReadBuildInfo
 const helpText = `Spreadsheets in your terminal.
 
 USAGE
-  sheets [file.csv]
-      Launch sheets interactively.
+  sheets [file]
+      Launch sheets interactively. Supports .csv, .tsv, and .xlsx files.
 
-  sheets [file.csv] [cell|range|cell=value|range=value]...
+  sheets [file] [cell|range|cell=value|range=value]...
       Query or modify a cell through the command-line interface.
 
   sheets < input.csv
@@ -38,6 +38,7 @@ OPTIONS
 
 EXAMPLES
   sheets budget.csv
+  sheets budget.xlsx
   sheets budget.csv B9
   sheets budget.csv B1:B3
   sheets budget.csv B7=10 B8=20
@@ -59,7 +60,7 @@ func newProgramModelWithInput(args []string, stdin io.Reader) (model, error) {
 		return m, nil
 	}
 
-	if err := m.loadCSVFile(args[0]); err != nil {
+	if err := m.loadFile(args[0]); err != nil {
 		if os.IsNotExist(err) {
 			m.currentFilePath = args[0]
 			return m, nil
@@ -360,7 +361,7 @@ func runCLI(args []string, stdout io.Writer) error {
 		m, err = newProgramModel([]string{path})
 	} else {
 		m = newModel()
-		err = m.loadCSVFile(path)
+		err = m.loadFile(path)
 	}
 	if err != nil {
 		return err

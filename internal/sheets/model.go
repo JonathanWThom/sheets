@@ -140,14 +140,20 @@ func newModel() model {
 	}
 }
 
-func (m *model) loadCSVFile(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+func (m *model) loadFile(path string) error {
+	var records [][]string
+	var err error
 
-	records, err := newDelimitedReader(path, file).ReadAll()
+	if isExcelPath(path) {
+		records, err = loadExcelRecords(path)
+	} else {
+		file, err2 := os.Open(path)
+		if err2 != nil {
+			return err2
+		}
+		defer file.Close()
+		records, err = newDelimitedReader(path, file).ReadAll()
+	}
 	if err != nil {
 		return err
 	}
@@ -268,7 +274,14 @@ func (m model) writeCSV(writer *csv.Writer) error {
 	return writer.WriteAll(m.csvRecords())
 }
 
-func (m model) writeCSVFile(path string) error {
+func (m model) writeFile(path string) error {
+	if isExcelPath(path) {
+		return writeExcelRecords(path, m.csvRecords())
+	}
+	return m.writeCSVToFile(path)
+}
+
+func (m model) writeCSVToFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
